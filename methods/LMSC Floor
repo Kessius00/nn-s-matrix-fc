@@ -1,0 +1,106 @@
+def soft_threshold(x, threshold):
+    """Soft-thresholding operator"""
+    return np.where(x > threshold, x - threshold,
+                    np.where(x < -threshold, x + threshold, 0))
+
+def proximal_operator_P(y, R, P, u, rho):
+    """Proximal operator for P"""
+    S = y / rho + R - u
+    Q, Sigma, W = np.linalg.svd(S, full_matrices=False)
+    Sigma_prox = soft_threshold(Sigma, 1/rho)
+    P_next = Q @ np.diag(Sigma_prox) @ W
+    return P_next
+
+def matrix_rank(M, tol=1e-6):
+    """Rank check function"""
+    _, Sigma, _ = np.linalg.svd(M, full_matrices=False)
+    return np.sum(Sigma > tol)
+
+def proximal_operator_Z(P, u, lambda_, rho):
+    """Proximal operator for auxiliary variable Z"""
+    Z_next = soft_threshold(P + u, lambda_ / rho)
+    return Z_next
+
+def projection_onto_soc(x, t):
+    """Project onto the second-order cone K"""
+    x_norm = np.linalg.norm(x)
+
+    if x_norm <= t:
+        return x,t  # Case 1: x_F ≤ t
+    elif -x_norm <= t <= x_norm:
+        # Case 2: -x_F ≤ t ≤ x_F
+        projected_x = 1/2 * (1 + t / x_norm) * x  # Scale the vector x
+        projected_t = (x_norm + t) / 2  # Update t
+        return projected_x, projected_t  # Return as separate entities
+    else:
+        return np.zeros_like(x), 0  # Case 3: t ≤ -x_F
+
+def update_y_s(y, s, P, R, delta, epsilon):
+    """Update Lagrange multipliers y and s using projection onto the second-order cone K."""
+    difference = R - P
+    y_new, s_new = projection_onto_soc(y + delta * difference, s - delta*epsilon)
+    return y_new, s_new
+
+def error(P, R):
+    re_er = 0.5 * np.linalg.norm((P-R), 'fro')**2
+    data_norm_squared = np.linalg.norm(R, 'fro')**2
+    objective_percentage = (re_er / data_norm_squared) * 100
+    return objective_percentage
+
+def optimize(rho, lambda_, R, P_init, u_init, y_init, s_init, delta, num_iterations):
+    """Main optimization loop."""
+    P = P_init
+    u = u_init
+    y = y_init
+    s = s_init
+    Z = np.zeros_like(P) 
+    errors = []
+
+    for k in range(num_iterations):
+
+        P = proximal_operator_P(y, R, P, u, rho)
+
+        y, s = update_y_s(y, s, P, R, delta, epsilon)
+
+        Z = proximal_operator_Z(P, u, lambda_, rho)
+
+        u = u + (P - Z)
+
+        rank_P = matrix_rank(P)
+        print(f"Iteration {k+1}: Rank of P = {rank_P}")
+
+        current_error = error(P, R)
+        errors.append(current_error)
+
+    return P, Z, u, y, s, errors
+
+m = 100
+n = 50
+
+R = np.random.rand(m, n)
+P_init = np.random.rand(m, n)
+u_init = np.zeros((m, n))
+y_init = np.ones((m, n))
+s_init = 1
+rho = 1/250
+lambda_ = 0.01
+delta = 0.01
+num_iterations = 1000
+epsilon = 0.1
+
+P_final, Z_final, u_final, y_final, s_final, errors = optimize(rho, lambda_, R, P_init, u_init, y_init, s_init, delta, num_iterations)
+
+print("Final R:", R)
+print("Final P:", P_final)
+print("Final Z:", Z_final)
+print("Final u:", u_final)
+print("Final y:", y_final)
+print("Final s:", s_final)
+
+print("Error:", error(P_final, R))
+
+S_1 = y_init / rho + R - u_init
+Q, Sigma, W = np.linalg.svd(S_1, full_matrices=False)
+print(f"Singular values before thresholding: {Sigma}")
+Sigma_prox = soft_threshold(Sigma, 1/rho)
+print(f"Singular values after thresholding: {Sigma_prox}")
