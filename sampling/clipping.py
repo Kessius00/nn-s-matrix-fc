@@ -182,33 +182,19 @@ def threshold_percentage(data, percentage):
 def partlyDiscardedClipping(data_matrix, uniform_ratio_keep, threshold=None, threshold_ratio_keep=0.6):
     # Create a figure and axis for the original matrix
     fig, ax = plt.subplots(figsize=(6, 6))  # Keeping aspect ratio
-
-    # Plot the matrix with a color scale
     cax = ax.matshow(data_matrix, cmap='viridis')
-
-    # Add colorbar to show the scale
     fig.colorbar(cax)
-
-    # Show the plot
     plt.show()
     
     # Randomly discard values to create an imperfect matrix
     imperfect_matrix = randomDiscard(data_matrix, 1 - uniform_ratio_keep)
-
-    # Replace zeros in the imperfect matrix with NaN
     imperfect_matrix_with_nan = np.where(imperfect_matrix == 0, np.nan, imperfect_matrix)
 
     
     # Create a figure and axis for the imperfect matrix
     fig, ax = plt.subplots(figsize=(6, 6))  # Keeping aspect ratio
-
-    # Plot the imperfect matrix with NaN values
     cax = ax.matshow(imperfect_matrix_with_nan, cmap='viridis')
-
-    # Add colorbar to show the scale
     fig.colorbar(cax)
-
-    # Show the plot
     plt.show()
 
     if threshold is None:
@@ -216,21 +202,13 @@ def partlyDiscardedClipping(data_matrix, uniform_ratio_keep, threshold=None, thr
 
     # Clip the imperfect matrix
     clipped_imperfect_matrix = clip_matrix(imperfect_matrix, threshold)
-
-    # Replace zeros in the clipped matrix with NaN
     clipped_imperfect_matrix_with_nan = np.where(clipped_imperfect_matrix == 0, np.nan, clipped_imperfect_matrix)
     
     
     # Create a figure and axis for the clipped matrix
     fig, ax = plt.subplots(figsize=(6, 6))  # Keeping aspect ratio
-
-    # Plot the clipped matrix with NaN values
     cax = ax.matshow(clipped_imperfect_matrix_with_nan, cmap='viridis')
-
-    # Add colorbar to show the scale
     fig.colorbar(cax)
-
-    # Show the plot
     plt.show()
 
     return clipped_imperfect_matrix

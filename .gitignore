@@ -1,5 +1,6 @@
 /data/
-/data_manip/
+/data_manip/fticr_data_clippings/
+/data_manip/provided_data/
 data/FTICR.npz
 data/QTOF.npz
 data/SIMS.npz
