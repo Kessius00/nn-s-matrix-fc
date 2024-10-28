@@ -11,6 +11,7 @@ def errorPlot(errors):
 
     # Create a plot
     plt.figure()
+    
     plt.plot(errors[:,0], marker='o', linestyle='-', color='b', label='MAE')
     plt.plot(errors[:,1], color='r', label='RMSE')
 
@@ -25,6 +26,28 @@ def errorPlot(errors):
     # Show the plot
     plt.grid(True)
     plt.show()
+    
+def relErrorPlot(errors):
+    errors = np.array(errors)
+    # Create a plot
+    plt.figure()
+    
+    plt.plot(errors[:,0], marker='o', linestyle='-', color='orange', label='in-sampling')
+    plt.plot(errors[:,1], color='r', linestyle=':', label='out-of-sampling')
+    plt.plot(errors[:,2], color='b', label='general')
+
+    # Add labels and title
+    plt.title("Error decrease")
+    plt.xlabel("Iteration")
+    plt.ylabel("Error")
+
+    # Show legend
+    plt.legend()
+
+    # Show the plot
+    plt.grid(True)
+    plt.show()
+    
     
     
 def visualizeData(dense_matrix):
