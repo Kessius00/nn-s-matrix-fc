@@ -10,6 +10,12 @@ def shrinkage_operator(x, phi):
     # Apply the shrinkage (soft-thresholding) operator element-wise
     return np.where(x > phi, x - phi, np.where(x < -phi, x + phi, 0))
 
+
+def soft_threshold(x, threshold):
+    """Soft-thresholding operator"""
+    return np.where(x > threshold, x - threshold,
+                    np.where(x < -threshold, x + threshold, 0))
+    
     
 def orthogonal_projection(x, t):
     # In de paper weergegeven als P_K 
@@ -68,46 +74,22 @@ def generate_matrix_with_rank(m, n, r):
     
     return matrix
 
-def allErrors(R,P, sampled_mask):
-    out_of_sampled_mask = np.where(sampled_mask==1, 0, 1)
-    
-    
-    in_sampling_err =.5* np.linalg.norm((P-R)*sampled_mask, 'fro')**2
-    data_norm_squared = np.linalg.norm(R, 'fro')**2
-    rel_insampling = (in_sampling_err/data_norm_squared)*100
-    
-    out_sampling_err =.5* np.linalg.norm((P-R)*out_of_sampled_mask, 'fro')**2
-    rel_outsampling = (out_sampling_err / data_norm_squared) * 100
-    
-    err = .5* np.linalg.norm((P-R), 'fro')**2
-    rel_gen_err = (err/data_norm_squared) *100
-    
-    return rel_insampling, rel_outsampling, rel_gen_err
-    
-    
-    
-    
-    
-    
-    
-    
+
 
 def proximal_operator_P(y, R, u, rho):
     """Proximal operator for P"""
     S = y / rho + R - u
     Q, Sigma, W = np.linalg.svd(S, full_matrices=False)
-    Sigma_prox = shrinkage_operator(Sigma, 1/rho)
+    Sigma_prox = soft_threshold(Sigma, 1/rho)
     rank = np.sum(Sigma_prox > 0)
     P_next = Q[:, :rank] * Sigma_prox[:rank] @ W[:rank, :]
     return P_next, rank
 
 
-def update_y_s(y, s, P, R, delta, epsilon, sampled_mask):
+def update_y_s(y, s, P, R, delta, epsilon):
     """Update Lagrange multipliers y and s using projection onto the second-order cone K."""
     # P must be the P_{k+1} and not the P_k
-    
-    # hier moet ik ff het verschil op de punten doen
-    difference = (R - P)*sampled_mask
+    difference =(R - P)
     y_new, s_new = projection_onto_soc(y + delta * difference, s - delta*epsilon)
     return y_new, s_new
 
@@ -117,11 +99,11 @@ def proximal_operator_Z(P, u, lambda_, rho):
     """Proximal operator for auxiliary variable Z"""
     # P is the new P_k+1
     # u is the u_k 
-    Z_next = shrinkage_operator(P + u, lambda_ / rho)
+    Z_next = soft_threshold(P + u, lambda_ / rho)
     return Z_next
 
 
-def LMSC_optimize(rho, lambda_, R, P_init, sampled_mask, u_init, y_init, s_init, delta, epsilon, num_iterations):
+def LMSC_optimize(rho, lambda_, R, P_init, u_init, y_init, s_init, delta, epsilon, num_iterations):
     """Main optimization loop."""
     P = P_init
     u = u_init
@@ -129,24 +111,22 @@ def LMSC_optimize(rho, lambda_, R, P_init, sampled_mask, u_init, y_init, s_init,
     s = s_init
     Z = np.zeros_like(P) 
     errors = []
-    rel_errors = []
-    print(f'Is lambda smaller then rho?: {lambda_<rho}')
+    
 
     for k in range(num_iterations):
 
         P, rank_P = proximal_operator_P(y, R, u, rho)
 
-        y, s = update_y_s(y, s, P, R, delta, epsilon, sampled_mask)
+        y, s = update_y_s(y, s, P, R, delta, epsilon)
 
         Z = proximal_operator_Z(P, u, lambda_, rho)
 
-        # wederom verschil op de punten doen
         u = u + (P - Z)
         
-        print(f"Iteration {k+1}: Rank of P = {rank_P}")
+        if round((k)/10) == (k)/10:
+            print(f"Iteration {k+1}: Rank of P = {rank_P}")
 
-        MAE, RMSE = validationErrors(P, R, np.count_nonzero(sampled_mask == 1))
-        rel_errors.append(allErrors(R=R, P=P, sampled_mask=sampled_mask))
+        MAE, RMSE = validationErrors(P, R, R.shape[0]*R.shape[1])
         errors.append([MAE, RMSE])
 
-    return P, Z, u, y, s, errors,rel_errors
+    return P, Z, u, y, s, errors
