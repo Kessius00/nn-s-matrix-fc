@@ -143,7 +143,7 @@ def LMSC_optimize(rho, lambda_, R, P_init, sampled_mask, u_init, y_init, s_init,
         # wederom verschil op de punten doen
         u = u + (P - Z)
         
-        print(f"Iteration {k+1}: Rank of P = {rank_P}")
+        # print(f"Iteration {k+1}: Rank of P = {rank_P}")
 
         MAE, RMSE = validationErrors(P, R, np.count_nonzero(sampled_mask == 1))
         rel_errors.append(allErrors(R=R, P=P, sampled_mask=sampled_mask))

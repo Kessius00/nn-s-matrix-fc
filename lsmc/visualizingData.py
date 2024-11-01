@@ -2,7 +2,8 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
-
+import os
+import pandas as pd
 
 
 
@@ -47,8 +48,35 @@ def relErrorPlot(errors):
     # Show the plot
     plt.grid(True)
     plt.show()
+
+
+def errorPlotDataFrame(lambda_, rho, gamma, df_results):
+    specific_errors = df_results[
+    (df_results['lambda'] == lambda_) &
+    (df_results['rho'] == rho) &
+    (df_results['gamma'] == gamma)]
+    # Convert 'errors' and 'relative_errors' columns to NumPy arrays
+    errors_array = specific_errors['errors'].to_numpy()[0]
+
+    # Create a plot
+    plt.figure(figsize=(8, 5))
     
-    
+    plt.plot(np.array(errors_array)[:,0], marker='o', linestyle='-', color='b', label='MAE')
+    plt.plot(np.array(errors_array)[:,1], color='r', label='RMSE')
+
+    # Add labels and title6
+    plt.title(f'Error Convergence (lambda = {lambda_}, rho = {rho}, gamma = {gamma})')
+
+    plt.xlabel("Iteration")
+    plt.ylabel("Error")
+
+    # Show legend
+    plt.legend()
+
+    # Show the plot
+    plt.grid(True)
+    plt.show()
+
     
 def visualizeData(dense_matrix):
     # Create a figure and axis
