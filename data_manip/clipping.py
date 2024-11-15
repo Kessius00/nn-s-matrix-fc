@@ -35,7 +35,7 @@ def probabilityMatrix(n_rows, n_cols, percentage):
 
 def randomDiscard(M, ratio_keep):
     P = probabilityMatrix(M.shape[0], M.shape[1], ratio_keep)
-    return np.multiply(M, P)
+    return np.multiply(M, P), P
 
 def select_top_percentage(M, ratio_keep):
     # Flatten the matrix into a 1D array for easier processing
@@ -58,10 +58,16 @@ def select_top_percentage(M, ratio_keep):
 def partlyDiscardedClipping(data_matrix, uniform_ratio_keep, threshold_ratio_keep):
     # Clip the imperfect matrix
     clipped_matrix = select_top_percentage(data_matrix, threshold_ratio_keep)
+    mask_clip = np.where(clipped_matrix!=0, 1, 0)
     
     # Randomly discard values to create an imperfect matrix
-    imperfect_matrix = randomDiscard(clipped_matrix, 1 - uniform_ratio_keep)
-    return imperfect_matrix
+    imperfect_matrix, mask_gaussian = randomDiscard(clipped_matrix, 1 - uniform_ratio_keep)
+    
+    # naive multiplication
+    mask_clip = mask_clip.astype(np.int8)
+    mask_gaussian = mask_gaussian.astype(np.int8)
+    sampled_mask = mask_clip * mask_gaussian
+    return imperfect_matrix, sampled_mask
 
 
 
