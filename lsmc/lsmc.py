@@ -150,3 +150,36 @@ def LMSC_optimize(rho, lambda_, R, P_init, sampled_mask, u_init, y_init, s_init,
         errors.append([MAE, RMSE])
 
     return P, Z, u, y, s, errors,rel_errors, rank_P
+
+
+def LMSC_optimize_rank_stop(rho, lambda_, R, P_init, sampled_mask, u_init, y_init, s_init, delta, epsilon, num_iterations, r_stop):
+    """Main optimization loop."""
+    P = P_init
+    u = u_init
+    y = y_init
+    s = s_init
+    Z = np.zeros_like(P) 
+    errors = []
+    rel_errors = []
+    print(f'Is lambda smaller then rho?: {lambda_<rho}')
+
+    for k in range(num_iterations):
+        
+        P, rank_P = proximal_operator_P(y, R, u, rho)
+        if rank_P >= r_stop:
+            break
+
+        y, s = update_y_s(y, s, P, R, delta, epsilon, sampled_mask)
+
+        Z = proximal_operator_Z(P, u, lambda_, rho)
+
+        # wederom verschil op de punten doen
+        u = u + (P - Z)
+        
+        # print(f"Iteration {k+1}: Rank of P = {rank_P}")
+        
+        MAE, RMSE = validationErrors(P, R, np.count_nonzero(sampled_mask == 1))
+        rel_errors.append(allErrors(R=R, P=P, sampled_mask=sampled_mask))
+        errors.append([MAE, RMSE])
+
+    return P, Z, u, y, s, errors,rel_errors, rank_P
