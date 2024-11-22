@@ -165,7 +165,9 @@ def LMSC_optimize_rank_stop(rho, lambda_, R, P_init, sampled_mask, u_init, y_ini
 
     for k in range(num_iterations):
         
+        
         P, rank_P = proximal_operator_P(y, R, u, rho)
+        print(f'{k}: rank={rank_P}')
         if rank_P >= r_stop:
             break
 
