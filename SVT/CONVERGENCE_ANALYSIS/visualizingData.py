@@ -5,6 +5,28 @@ import numpy as np
 import os
 import pandas as pd
 
+def sample_array_with_mask(arr, mask, row_sample_size=10000, col_sample_size=None):
+    # Check if row_sample_size exceeds the number of rows
+    if row_sample_size >= arr.shape[0]:
+        row_indices = np.arange(arr.shape[0])  # Take all rows
+    else:
+        row_indices = np.random.choice(arr.shape[0], size=row_sample_size, replace=False)
+    
+    # Check if column sampling is specified
+    if col_sample_size is not None:
+        if col_sample_size >= arr.shape[1]:
+            col_indices = np.arange(arr.shape[1])  # Take all columns
+        else:
+            col_indices = np.random.choice(arr.shape[1], size=col_sample_size, replace=False)
+        
+        sampled_arr = arr[row_indices, :][:, col_indices]
+        sampled_mask = mask[row_indices, :][:, col_indices]
+    else:
+        # If no column sampling, take all columns
+        sampled_arr = arr[row_indices, :]
+        sampled_mask = mask[row_indices, :]
+    
+    return sampled_arr, sampled_mask
 
 
 def errorPlot(errors):

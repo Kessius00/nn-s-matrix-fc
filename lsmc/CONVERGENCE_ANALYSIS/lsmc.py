@@ -38,18 +38,6 @@ def projection_onto_soc(x, t):
 
 
 
-def error(P, R):
-    re_er = 0.5 * np.linalg.norm((P-R), 'fro')**2
-    data_norm_squared = np.linalg.norm(R, 'fro')**2
-    objective_percentage = (re_er / data_norm_squared) * 100
-    return objective_percentage
-
-def validationErrors(P, R, num_tested_ratings):
-    MAE = np.sum(np.abs(R-P))/num_tested_ratings
-    RMSE = np.sqrt(np.sum(np.abs(R-P)**2)/num_tested_ratings)
-    return MAE, RMSE
-
-
 def matrix_rank(M, tol=1e-6):
     """Rank check function"""
     _, Sigma, _ = np.linalg.svd(M, full_matrices=False)
@@ -72,19 +60,17 @@ def allErrors(R,P, sampled_mask):
     out_of_sampled_mask = np.where(sampled_mask==1, 0, 1)
     
     
-    in_sampling_err =.5* np.linalg.norm((P-R)*sampled_mask, 'fro')**2
+    in_sampling_err = np.linalg.norm((P-R)*sampled_mask, 'fro')**2
     data_norm_squared = np.linalg.norm(R, 'fro')**2
     rel_insampling = (in_sampling_err/data_norm_squared)*100
     
-    out_sampling_err =.5* np.linalg.norm((P-R)*out_of_sampled_mask, 'fro')**2
+    out_sampling_err = np.linalg.norm((P-R)*out_of_sampled_mask, 'fro')**2
     rel_outsampling = (out_sampling_err / data_norm_squared) * 100
     
-    err = .5* np.linalg.norm((P-R), 'fro')**2
+    err = np.linalg.norm((P-R), 'fro')**2
     rel_gen_err = (err/data_norm_squared) *100
     
     return rel_insampling, rel_outsampling, rel_gen_err
-    
-    
     
     
     
@@ -121,35 +107,34 @@ def proximal_operator_Z(P, u, lambda_, rho):
     return Z_next
 
 
-def LMSC_optimize(rho, lambda_, R, P_init, sampled_mask, u_init, y_init, s_init, delta, epsilon, num_iterations):
-    """Main optimization loop."""
-    P = P_init
-    u = u_init
-    y = y_init
-    s = s_init
-    Z = np.zeros_like(P) 
-    errors = []
-    rel_errors = []
-    print(f'Is lambda smaller then rho?: {lambda_<rho}')
+# def LMSC_optimize(rho, lambda_, R, P_init, sampled_mask, u_init, y_init, s_init, delta, epsilon, num_iterations):
+#     """Main optimization loop."""
+#     P = P_init
+#     u = u_init
+#     y = y_init
+#     s = s_init
+#     Z = np.zeros_like(P) 
+#     errors = []
+#     rel_errors = []
+#     print(f'Is lambda smaller then rho?: {lambda_<rho}')
 
-    for k in range(num_iterations):
+#     for k in range(num_iterations):
+#         P, rank_P = proximal_operator_P(y, R, u, rho)
+
+#         y, s = update_y_s(y, s, P, R, delta, epsilon, sampled_mask)
+
+#         Z = proximal_operator_Z(P, u, lambda_, rho)
+
+#         # wederom verschil op de punten doen
+#         u = u + (P - Z)
         
-        P, rank_P = proximal_operator_P(y, R, u, rho)
-
-        y, s = update_y_s(y, s, P, R, delta, epsilon, sampled_mask)
-
-        Z = proximal_operator_Z(P, u, lambda_, rho)
-
-        # wederom verschil op de punten doen
-        u = u + (P - Z)
+#         # print(f"Iteration {k+1}: Rank of P = {rank_P}")
         
-        # print(f"Iteration {k+1}: Rank of P = {rank_P}")
-        
-        MAE, RMSE = validationErrors(P, R, np.count_nonzero(sampled_mask == 1))
-        rel_errors.append(allErrors(R=R, P=P, sampled_mask=sampled_mask))
-        errors.append([MAE, RMSE])
+#         MAE, RMSE = validationErrors(P, R, np.count_nonzero(sampled_mask == 1))
+#         rel_errors.append(allErrors(R=R, P=P, sampled_mask=sampled_mask))
+#         errors.append([MAE, RMSE])
 
-    return P, Z, u, y, s, errors,rel_errors, rank_P
+#     return P, Z, u, y, s, errors,rel_errors, rank_P
 
 
 def LMSC_optimize_rank_stop(rho, lambda_, R, P_init, sampled_mask, u_init, y_init, s_init, delta, epsilon, num_iterations, r_stop):
@@ -159,17 +144,17 @@ def LMSC_optimize_rank_stop(rho, lambda_, R, P_init, sampled_mask, u_init, y_ini
     y = y_init
     s = s_init
     Z = np.zeros_like(P) 
-    errors = []
     rel_errors = []
+    rank_history = []
     print(f'Is lambda smaller then rho?: {lambda_<rho}')
 
     for k in range(num_iterations):
         
         
         P, rank_P = proximal_operator_P(y, R, u, rho)
-        print(f'{k}: rank={rank_P}')
-        if rank_P >= r_stop:
-            break
+        
+        if k%5==0:
+            print(f'{k}: rank={rank_P}')
 
         y, s = update_y_s(y, s, P, R, delta, epsilon, sampled_mask)
 
@@ -178,10 +163,11 @@ def LMSC_optimize_rank_stop(rho, lambda_, R, P_init, sampled_mask, u_init, y_ini
         # wederom verschil op de punten doen
         u = u + (P - Z)
         
-        # print(f"Iteration {k+1}: Rank of P = {rank_P}")
+        if rank_P >= r_stop:
+            break
         
-        MAE, RMSE = validationErrors(P, R, np.count_nonzero(sampled_mask == 1))
+        
+        rank_history.append(rank_P)
         rel_errors.append(allErrors(R=R, P=P, sampled_mask=sampled_mask))
-        errors.append([MAE, RMSE])
 
-    return P, Z, u, y, s, errors,rel_errors, rank_P
+    return P, Z, u, y, s, rel_errors, rank_history

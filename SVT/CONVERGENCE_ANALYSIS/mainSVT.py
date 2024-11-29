@@ -19,12 +19,32 @@ def relative_approx_error(original, approximation):
     rel_error = 100 * (error / fro_M) ** 2
     return rel_error
 
-
+def allErrors(R,P, sampled_mask):
+    out_of_sampled_mask = np.where(sampled_mask==1, 0, 1)
+    
+    
+    in_sampling_err = np.linalg.norm((P-R)*sampled_mask, 'fro')**2
+    data_norm_squared = np.linalg.norm(R, 'fro')**2
+    rel_insampling = (in_sampling_err/data_norm_squared)*100
+    
+    out_sampling_err = np.linalg.norm((P-R)*out_of_sampled_mask, 'fro')**2
+    rel_outsampling = (out_sampling_err / data_norm_squared) * 100
+    
+    err = np.linalg.norm((P-R), 'fro')**2
+    rel_gen_err = (err/data_norm_squared) *100
+    
+    return rel_insampling, rel_outsampling, rel_gen_err
+    
+    
+    
+    
+    
 def projection_operator(M_sampled, X):
     """
     Compute the projection operator for matrix completion.
     """
     mask = M_sampled != 0
+    # visualizeData(mask)
     projection = np.zeros_like(X)
     projection[mask] = X[mask] - M_sampled[mask]
     return projection
